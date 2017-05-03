@@ -12,5 +12,5 @@ urlpatterns = [
     url(r'^user/(?P<uid>\d+)/$', rest_views.UserOther_R.as_view(), name='user-username'),
     url(r'^updateposition/$', rest_views.UpdatePosition.as_view(), name='update-position'),
     url(r'^show_garda/$', rest_views.show_garda, name='show_garda'),
-    url(r'^signup/$', rest_views.signup_view, name='signup'),
+    url(r'^show_attractions/$', rest_views.show_attractions, name='show_attractions'),
 ]

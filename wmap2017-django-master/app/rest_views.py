@@ -119,11 +119,23 @@ def token_login(request):
     else:
         return Response({"detail": "Invalid User Id of Password"}, status=status.HTTP_400_BAD_REQUEST)
 
-
+# supposed to be used for getting the garda stations locations but my access was blocked :(
 @api_view(["GET", ])
 @permission_classes((permissions.AllowAny,))
 @csrf_exempt
 def show_garda(request):
+    file = urllib2.urlopen(
+        'http://data.fingal.ie/datasets/xml/Garda_Stations.xml')
+    data = file.read()
+    file.close()
+
+    return Response({"data": data}, status=status.HTTP_200_OK)
+
+# getting the data from the link and passing it to the applications to be parsed
+@api_view(["GET", ])
+@permission_classes((permissions.AllowAny,))
+@csrf_exempt
+def show_attractions(request):
     file = urllib2.urlopen(
         'https://data.dublinked.ie/dataset/b1a0ce0a-bfd4-4d0b-b787-69a519c61672/resource/b38c4d25-097b-4a8f-b9be-cf6ab5b3e704/download/walk-dublin-poi-details-sample-datap20130415-1449.json')
     data = file.read()
@@ -131,36 +143,31 @@ def show_garda(request):
 
     return Response({"data": data}, status=status.HTTP_200_OK)
 
-
+#used for regisreting the user the data is beaing passed from the app and new user is added to the database
 @api_view(["GET", ])
 @permission_classes((permissions.AllowAny,))
 @csrf_exempt
-def signup_view(request):
-    if request.POST:
-        form = forms.SignupForm(request.POST)
-        if form.is_valid():
-            username = form.cleaned_data['username']
-            first_name = form.cleaned_data['first_name']
-            last_name = form.cleaned_data['last_name']
-            email = form.cleaned_data['email']
-            password = form.cleaned_data['password']
+def register(request):
 
-            try:
-                user = get_user_model().objects.get(username=username)
-                if user:
-                    form.add_error(None, ValidationError("This user already exists."))
-            except get_user_model().DoesNotExist:
-                user = get_user_model().objects.create_user(username=username)
+    if (not request.GET["username"]) or (not request.GET["password"] or (not request.GET["email"])):
+        return Response({"detail": "Missing username and/or password and/or email"}, status=status.HTTP_400_BAD_REQUEST)
+        print("no values")
+    try:
+        user = get_user_model().objects.get(username=request.GET["username"])
+        if user:
+            print("user already exists")
+            return Response({"detail": "User already exists"}, status=status.HTTP_400_BAD_REQUEST)
+    except get_user_model().DoesNotExist:
+        user = get_user_model().objects.create_user(username=request.GET["username"])
 
-                # Set user fields provided
-                user.set_password(password)
-                user.first_name = first_name
-                user.last_name = last_name
-                user.email = email
-                user.save()
+        # Set user fields provided
+        print(request.GET["password"] + request.GET["firstname"] + request.GET["lastname"] + request.GET["email"])
+        user.set_password(request.GET["password"])
+        user.first_name = request.GET["firstname"]
+        user.last_name = request.GET["lastname"]
+        user.email = request.GET["email"]
+        user.save()
+        print("done")
 
-                return redirect(reverse('app:login'))
-    else:
-        form = forms.SignupForm()
+        return Response({"detail": "User Created"}, status=status.HTTP_201_CREATED)
 
-    return render(request, 'app/signup.html', {'form': form})
